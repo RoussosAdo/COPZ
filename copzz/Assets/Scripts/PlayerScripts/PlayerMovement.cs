@@ -8,6 +8,7 @@ public class PlayerMovement : MonoBehaviour
     private Animator animatorplayer;
     private bool grounded;
 
+    public bool IsFacingRight { get; private set; } = true; // Tracks player direction
 
     private void Awake()
     {
@@ -17,34 +18,36 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
-
         float horizontalInput = Input.GetAxis("Horizontal");
 
-
-        if(body != null)
+        if (body != null)
         {
+            // Move the player horizontally
             body.velocity = new Vector2(horizontalInput * speed, body.velocity.y);
 
-            //For Flipping Sides,Change Vector In depend of Sprite Scale
-            if(horizontalInput > 0.01f)
+            // Flip the player based on movement direction
+            if (horizontalInput > 0.01f)
             {
-                    transform.localScale = new Vector2(4,4);
-            }else if(horizontalInput < -0.01f)
+                transform.localScale = new Vector2(4, 4);
+                IsFacingRight = true;
+            }
+            else if (horizontalInput < -0.01f)
             {
-                transform.localScale = new Vector2(-4, 4); 
+                transform.localScale = new Vector2(-4, 4);
+                IsFacingRight = false;
             }
 
-
-            if(Input.GetKey(KeyCode.Space) && grounded)
+            // Handle jump input
+            if (Input.GetKey(KeyCode.Space) && grounded)
             {
                 Jump();
             }
 
-            animatorplayer.SetBool("Run", horizontalInput != 0); //This will be walk animation [Cause it happens every time you press "d" so x axis]
-            animatorplayer.SetBool("Grounded",grounded);
+            // Update animations
+            animatorplayer.SetBool("Run", horizontalInput != 0);
+            animatorplayer.SetBool("Grounded", grounded);
         }
     }
-
 
     private void Jump()
     {
@@ -55,9 +58,9 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if(collision.gameObject.tag == "Ground")
+        if (collision.gameObject.CompareTag("Ground"))
         {
-            grounded = true;    
+            grounded = true;
         }
     }
 }
