@@ -84,7 +84,7 @@ public class PlayerAimWeapon : MonoBehaviour
         if (playerMovement.IsFacingRight) // Facing right
         {
             // Apply angle limits for facing right
-            targetAngle = Mathf.Clamp(targetAngle, -63.64f, 39.26f);
+            targetAngle = Mathf.Clamp(0, -63.64f, 39.26f);
             aimTransform.localScale = Vector3.Lerp(aimTransform.localScale, new Vector3(1, 1, 1), Time.deltaTime * smoothFlipSpeed);
         }
         else // Facing left
