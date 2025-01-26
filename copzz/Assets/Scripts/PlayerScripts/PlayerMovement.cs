@@ -9,6 +9,7 @@ public class PlayerMovement : MonoBehaviour
     private bool grounded;
 
     public bool IsFacingRight { get; private set; } = true; // Tracks player direction
+    private float horizontalInput; // Move horizontalInput to class level
 
     private void Awake()
     {
@@ -18,7 +19,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
-        float horizontalInput = Input.GetAxis("Horizontal");
+        horizontalInput = Input.GetAxis("Horizontal"); // Update the class-level variable
 
         if (body != null)
         {
@@ -62,5 +63,10 @@ public class PlayerMovement : MonoBehaviour
         {
             grounded = true;
         }
+    }
+
+    public bool canShoot()
+    {
+        return horizontalInput == 0 && grounded; // Now horizontalInput can be accessed
     }
 }

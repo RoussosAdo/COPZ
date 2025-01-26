@@ -11,26 +11,35 @@ public class PlayerAimWeapon : MonoBehaviour
         public Vector3 shootPosition;
     }
 
+    // For Shooting
+    [SerializeField] private float attackCooldown;
+    private PlayerMovement playerMovement;
+    private float cooldownTimer = Mathf.Infinity;
+    [SerializeField]
+    private Transform FirePoint;
+    [SerializeField]
+    private GameObject[] bullets;
+
     private Transform aimTransform;
     private Transform aimGunEndPointTransform;
     private Animator aimAnimator;
-    private PlayerMovement playerMovement;
 
-    [SerializeField] private float armLength = 0.3f; // Adjustable distance from the body (closer now)
+    [SerializeField] private float armLength = 0.8f; // Adjustable distance from the body (closer now)
     [SerializeField] private float smoothFlipSpeed = 10f; // Smooth flipping speed
 
     private void Awake()
     {
+        playerMovement = GetComponent<PlayerMovement>();
+
         aimTransform = transform.Find("Aim");
-        aimAnimator = aimTransform.GetComponent<Animator>();
-        aimGunEndPointTransform = aimTransform.Find("GunEndPointPosition");
+        aimAnimator = aimTransform?.GetComponent<Animator>();
+        aimGunEndPointTransform = aimTransform?.Find("GunEndPointPosition");
 
         if (aimTransform == null)
         {
             Debug.LogError("Aim Transform not found! Ensure there's a child named 'Aim' under the player.");
         }
 
-        playerMovement = GetComponent<PlayerMovement>();
         if (playerMovement == null)
         {
             Debug.LogError("PlayerMovement script not found! Ensure this is on the same GameObject.");
@@ -81,7 +90,7 @@ public class PlayerAimWeapon : MonoBehaviour
         else // Facing left
         {
             // Apply angle limits for facing left
-            targetAngle = Mathf.Clamp(targetAngle, 160.03f, -130.63f);
+            targetAngle = Mathf.Clamp(targetAngle, 190.03f, -190.63f);
             aimTransform.localScale = Vector3.Lerp(aimTransform.localScale, new Vector3(-1, -1, -1), Time.deltaTime * smoothFlipSpeed); // Flip upside down
         }
 
@@ -94,9 +103,14 @@ public class PlayerAimWeapon : MonoBehaviour
 
     private void HandleShooting()
     {
-        if (Input.GetMouseButtonDown(0))
+        // Increment the cooldown timer every frame
+        cooldownTimer += Time.deltaTime;
+
+        // Check if the player can shoot
+        if (Input.GetMouseButtonDown(0) && cooldownTimer >= attackCooldown && playerMovement.canShoot())
         {
             Vector3 mousePosition = GetMouseWorldPosition();
+            Attack();
 
             aimAnimator.SetTrigger("Shoot");
 
@@ -107,4 +121,29 @@ public class PlayerAimWeapon : MonoBehaviour
             });
         }
     }
+
+
+    private void Attack()
+    {
+        cooldownTimer = 0;
+
+        // Loop through bullets to find an inactive one
+        foreach (GameObject bullet in bullets)
+        {
+            if (!bullet.activeInHierarchy) // Use an inactive bullet
+            {
+                bullet.transform.position = FirePoint.position; // Spawn at FirePoint
+
+                // Determine the direction: +1 for right, -1 for left
+                float direction = playerMovement.IsFacingRight ? 1f : -1f;
+
+                // Activate the bullet and apply force
+                bullet.SetActive(true);
+                bullet.GetComponent<Projectile>().SetDirection(direction);
+                break; // Stop after firing one bullet
+            }
+        }
+    }
+
+
 }
