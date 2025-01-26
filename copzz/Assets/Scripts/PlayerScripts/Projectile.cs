@@ -3,7 +3,6 @@ using UnityEngine;
 public class Projectile : MonoBehaviour
 {
     [SerializeField] private float speed; // Speed of the projectile
-    private float direction;
     private Rigidbody2D rb; // Reference to Rigidbody2D
     private bool hit;
 
@@ -14,22 +13,21 @@ public class Projectile : MonoBehaviour
 
     private void OnEnable()
     {
-        // Reset velocity every time the bullet is enabled
-        rb.velocity = Vector2.zero;
+        rb.velocity = Vector2.zero; // Reset velocity every time the bullet is enabled
         hit = false;
     }
 
-    public void SetDirection(float _direction)
+    public void SetDirection(Vector2 direction)
     {
-        direction = _direction;
         hit = false;
 
-        // Ensure bullet faces the right direction
-        float localScaleX = Mathf.Abs(transform.localScale.x) * Mathf.Sign(direction);
-        transform.localScale = new Vector3(localScaleX, transform.localScale.y, transform.localScale.z);
+        // Normalize direction and apply speed
+        Vector2 velocity = direction.normalized * speed;
+        rb.velocity = velocity;
 
-        // Add force to the Rigidbody2D
-        rb.AddForce(new Vector2(speed * direction, 0), ForceMode2D.Impulse);
+        // Rotate the bullet to face the direction
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0, 0, angle);
     }
 
     private void OnTriggerEnter2D(Collider2D collision)

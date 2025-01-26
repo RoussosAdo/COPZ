@@ -127,6 +127,12 @@ public class PlayerAimWeapon : MonoBehaviour
     {
         cooldownTimer = 0;
 
+        // Get the mouse position
+        Vector3 mousePosition = GetMouseWorldPosition();
+
+        // Calculate direction from FirePoint to the mouse
+        Vector2 direction = (mousePosition - FirePoint.position).normalized;
+
         // Loop through bullets to find an inactive one
         foreach (GameObject bullet in bullets)
         {
@@ -134,16 +140,19 @@ public class PlayerAimWeapon : MonoBehaviour
             {
                 bullet.transform.position = FirePoint.position; // Spawn at FirePoint
 
-                // Determine the direction: +1 for right, -1 for left
-                float direction = playerMovement.IsFacingRight ? 1f : -1f;
-
-                // Activate the bullet and apply force
+                // Activate the bullet and apply the direction
                 bullet.SetActive(true);
                 bullet.GetComponent<Projectile>().SetDirection(direction);
+
+
+                // Trigger the camera shake
+                Camera.main.GetComponent<CameraShake>().Shake();
+
                 break; // Stop after firing one bullet
             }
         }
     }
+
 
 
 }
