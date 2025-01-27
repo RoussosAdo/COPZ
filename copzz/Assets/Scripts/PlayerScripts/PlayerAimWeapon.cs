@@ -11,20 +11,28 @@ public class PlayerAimWeapon : MonoBehaviour
         public Vector3 shootPosition;
     }
 
-    // For Shooting
+    private BulletPoolManager bulletPoolManager;
+
     [SerializeField] private float attackCooldown;
     private PlayerMovement playerMovement;
     private float cooldownTimer = Mathf.Infinity;
-    [SerializeField]
-    private Transform FirePoint;
-    [SerializeField]
-    private GameObject[] bullets;
+
+    [SerializeField] private Transform FirePoint;
+    [SerializeField] private GameObject[] bullets;
+    [SerializeField] private int defaultAmmo;
+    [SerializeField] private int maxAmmo;
+    [SerializeField] private int magazineSize = 10; // Bullets per reload
+    [SerializeField] private TMPro.TextMeshProUGUI ammoText;
+    [SerializeField] private TMPro.TextMeshProUGUI reloadText; // Text for reload status
+
+    private int ammo;
+    private int bulletsInReserve;
 
     private Transform aimTransform;
     private Transform aimGunEndPointTransform;
     private Animator aimAnimator;
 
-    [SerializeField] private float armLength = 0.8f; // Adjustable distance from the body (closer now)
+    [SerializeField] private float armLength = 0.8f; // Adjustable distance from the body
     [SerializeField] private float smoothFlipSpeed = 10f; // Smooth flipping speed
 
     private void Awake()
@@ -35,6 +43,16 @@ public class PlayerAimWeapon : MonoBehaviour
         aimAnimator = aimTransform?.GetComponent<Animator>();
         aimGunEndPointTransform = aimTransform?.Find("GunEndPointPosition");
 
+        bulletPoolManager = FindObjectOfType<BulletPoolManager>();
+        if (bulletPoolManager == null)
+        {
+            Debug.LogError("BulletPoolManager not found in the scene!");
+        }
+
+        // Initialize ammo and reserve bullets
+        bulletsInReserve = maxAmmo - defaultAmmo;
+        ammo = Mathf.Clamp(defaultAmmo, 0, magazineSize);
+
         if (aimTransform == null)
         {
             Debug.LogError("Aim Transform not found! Ensure there's a child named 'Aim' under the player.");
@@ -44,12 +62,27 @@ public class PlayerAimWeapon : MonoBehaviour
         {
             Debug.LogError("PlayerMovement script not found! Ensure this is on the same GameObject.");
         }
+
+        reloadText.SetText(""); // Clear reload text on start
     }
 
     private void Update()
     {
         HandleAiming();
         HandleShooting();
+        ammoText.SetText(ammo + "/" + bulletsInReserve);
+
+        // Check for reload input
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            Reload();
+        }
+    }
+
+    public void IncreaseAmmo(int increaseAmount)
+    {
+        bulletsInReserve += increaseAmount;
+        bulletsInReserve = Mathf.Clamp(bulletsInReserve, 0, maxAmmo);
     }
 
     public static Vector3 GetMouseWorldPosition()
@@ -74,85 +107,100 @@ public class PlayerAimWeapon : MonoBehaviour
     {
         if (aimTransform == null) return;
 
-        // Get the mouse position and calculate the direction
         Vector3 mousePosition = GetMouseWorldPosition();
         Vector3 aimDirection = (mousePosition - transform.position).normalized;
 
-        // Calculate the rotation angle
         float targetAngle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
 
-        if (playerMovement.IsFacingRight) // Facing right
+        if (playerMovement.IsFacingRight)
         {
-            // Apply angle limits for facing right
-            targetAngle = Mathf.Clamp(0, -63.64f, 39.26f);
+            targetAngle = Mathf.Clamp(targetAngle, -63.64f, 39.26f);
             aimTransform.localScale = Vector3.Lerp(aimTransform.localScale, new Vector3(1, 1, 1), Time.deltaTime * smoothFlipSpeed);
         }
-        else // Facing left
+        else
         {
-            // Apply angle limits for facing left
             targetAngle = Mathf.Clamp(targetAngle, 190.03f, -190.63f);
-            aimTransform.localScale = Vector3.Lerp(aimTransform.localScale, new Vector3(-1, -1, -1), Time.deltaTime * smoothFlipSpeed); // Flip upside down
+            aimTransform.localScale = Vector3.Lerp(aimTransform.localScale, new Vector3(-1, -1, -1), Time.deltaTime * smoothFlipSpeed);
         }
 
-        // Apply the rotation to the gun
         aimTransform.eulerAngles = new Vector3(0, 0, targetAngle);
-
-        // Position the gun at the specified arm length from the player's body, based on the mouse direction
         aimTransform.position = transform.position + aimDirection * armLength;
     }
 
     private void HandleShooting()
     {
-        // Increment the cooldown timer every frame
         cooldownTimer += Time.deltaTime;
 
-        // Check if the player can shoot
         if (Input.GetMouseButtonDown(0) && cooldownTimer >= attackCooldown && playerMovement.canShoot())
         {
-            Vector3 mousePosition = GetMouseWorldPosition();
-            Attack();
-
-            aimAnimator.SetTrigger("Shoot");
-
-            OnShoot?.Invoke(this, new OnShootEventArgs
+            if (ammo > 0)
             {
-                gunEndPointPosition = aimGunEndPointTransform.position,
-                shootPosition = mousePosition,
-            });
+                Vector3 mousePosition = GetMouseWorldPosition();
+                Attack();
+
+                aimAnimator.SetTrigger("Shoot");
+
+                OnShoot?.Invoke(this, new OnShootEventArgs
+                {
+                    gunEndPointPosition = aimGunEndPointTransform.position,
+                    shootPosition = mousePosition,
+                });
+            }
+            else
+            {
+                Debug.Log("Out of ammo! Reload.");
+            }
         }
     }
 
+    private void Reload()
+    {
+        if (ammo == magazineSize)
+        {
+            Debug.Log("Magazine already full!");
+            return;
+        }
+
+        int bulletsNeeded = magazineSize - ammo;
+        int bulletsToReload = Mathf.Min(bulletsNeeded, bulletsInReserve);
+
+        if (bulletsToReload > 0)
+        {
+            ammo += bulletsToReload;
+            bulletsInReserve -= bulletsToReload;
+
+            Debug.Log($"Reloaded {bulletsToReload} bullets. Current Ammo: {ammo}/{bulletsInReserve}");
+            reloadText.SetText("Reloading...");
+            Invoke("ClearReloadText", 1.5f); // Simulate reload delay
+        }
+        else
+        {
+            Debug.Log("No bullets left in reserve!");
+        }
+    }
+
+    private void ClearReloadText()
+    {
+        reloadText.SetText("");
+    }
 
     private void Attack()
     {
         cooldownTimer = 0;
 
-        // Get the mouse position
-        Vector3 mousePosition = GetMouseWorldPosition();
-
-        // Calculate direction from FirePoint to the mouse
-        Vector2 direction = (mousePosition - FirePoint.position).normalized;
-
-        // Loop through bullets to find an inactive one
-        foreach (GameObject bullet in bullets)
+        GameObject bullet = bulletPoolManager.GetBullet();
+        if (bullet != null)
         {
-            if (!bullet.activeInHierarchy) // Use an inactive bullet
-            {
-                bullet.transform.position = FirePoint.position; // Spawn at FirePoint
+            bullet.transform.position = FirePoint.position;
+            bullet.SetActive(true);
+            bullet.GetComponent<Projectile>().SetDirection((GetMouseWorldPosition() - FirePoint.position).normalized);
 
-                // Activate the bullet and apply the direction
-                bullet.SetActive(true);
-                bullet.GetComponent<Projectile>().SetDirection(direction);
-
-
-                // Trigger the camera shake
-                Camera.main.GetComponent<CameraShake>().Shake();
-
-                break; // Stop after firing one bullet
-            }
+            ammo--;
+            Camera.main.GetComponent<CameraShake>().Shake();
+        }
+        else
+        {
+            Debug.Log("No available bullets in pool!");
         }
     }
-
-
-
 }
