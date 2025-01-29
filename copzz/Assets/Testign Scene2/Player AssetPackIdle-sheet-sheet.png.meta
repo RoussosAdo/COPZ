@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 81c384c95f5292843ba5f2a69d587a8a
+guid: 7c430d5c4a002ec42a577a5ed093bdf0
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -117,13 +117,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: JakeIdle_0
+      name: Player AssetPackIdle-sheet-sheet_0
       rect:
         serializedVersion: 2
-        x: 1
-        y: 80
+        x: 42
+        y: 44
         width: 27
-        height: 56
+        height: 57
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -131,20 +131,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: d1455ff735bb42949a1b9f8489353d2d
-      internalID: 1386323863
+      spriteID: 69fc4102c629c9c468cc173a8964ded2
+      internalID: -340292924
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: JakeIdle_1
+      name: Player AssetPackIdle-sheet-sheet_1
       rect:
         serializedVersion: 2
-        x: 65
-        y: 80
+        x: 106
+        y: 44
         width: 27
-        height: 56
+        height: 57
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -152,20 +152,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: d87439aaea28781478af68298b753761
-      internalID: 1235478036
+      spriteID: 88b11753973cb96448a473ccd020e2e8
+      internalID: 1463019528
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: JakeIdle_2
+      name: Player AssetPackIdle-sheet-sheet_2
       rect:
         serializedVersion: 2
-        x: 129
-        y: 80
+        x: 170
+        y: 44
         width: 27
-        height: 56
+        height: 57
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -173,20 +173,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 941e678930c56894ab9d8d0389094045
-      internalID: 2133834412
+      spriteID: 7a68c75d8894b3c43a9c0877b98e6791
+      internalID: 1432307967
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: JakeIdle_3
+      name: Player AssetPackIdle-sheet-sheet_3
       rect:
         serializedVersion: 2
-        x: 193
-        y: 80
+        x: 234
+        y: 44
         width: 27
-        height: 56
+        height: 57
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -194,20 +194,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 2704704ad6ef4624298afaeba796d925
-      internalID: -1368843345
+      spriteID: 6d040a79119eaa44e9b15e8e532aa551
+      internalID: -454151860
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: JakeIdle_4
+      name: Player AssetPackIdle-sheet-sheet_4
       rect:
         serializedVersion: 2
-        x: 257
-        y: 80
+        x: 298
+        y: 44
         width: 27
-        height: 56
+        height: 57
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -215,20 +215,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: dd08cf50bb6fe6546ba46e33ca6df976
-      internalID: 628721936
+      spriteID: 398737ac1e3ba0c41b45f0140ba52d02
+      internalID: 2064732115
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: JakeIdle_5
+      name: Player AssetPackIdle-sheet-sheet_5
       rect:
         serializedVersion: 2
-        x: 321
-        y: 80
+        x: 362
+        y: 44
         width: 27
-        height: 56
+        height: 57
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -236,20 +236,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 6a0b1ed307772cc448bfcd504f5a4128
-      internalID: -823034898
+      spriteID: e47e890e6f38e244fb22df239cd0783b
+      internalID: 605839354
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: JakeIdle_6
+      name: Player AssetPackIdle-sheet-sheet_6
       rect:
         serializedVersion: 2
-        x: 1
-        y: 0
+        x: 426
+        y: 44
         width: 27
-        height: 56
+        height: 57
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -257,8 +257,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 53f61212b50e9c645a21d55ea0cb81a4
-      internalID: -1342270575
+      spriteID: 569ec85ebbdfc2c4589ee5301cd52be0
+      internalID: 1801341866
       vertices: []
       indices: 
       edges: []
@@ -274,13 +274,13 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      JakeIdle_0: 1386323863
-      JakeIdle_1: 1235478036
-      JakeIdle_2: 2133834412
-      JakeIdle_3: -1368843345
-      JakeIdle_4: 628721936
-      JakeIdle_5: -823034898
-      JakeIdle_6: -1342270575
+      Player AssetPackIdle-sheet-sheet_0: -340292924
+      Player AssetPackIdle-sheet-sheet_1: 1463019528
+      Player AssetPackIdle-sheet-sheet_2: 1432307967
+      Player AssetPackIdle-sheet-sheet_3: -454151860
+      Player AssetPackIdle-sheet-sheet_4: 2064732115
+      Player AssetPackIdle-sheet-sheet_5: 605839354
+      Player AssetPackIdle-sheet-sheet_6: 1801341866
   spritePackingTag: 
   pSDRemoveMatte: 0
   pSDShowRemoveMatteOption: 0
