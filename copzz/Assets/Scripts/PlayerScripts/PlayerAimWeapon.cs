@@ -16,6 +16,8 @@ public class PlayerAimWeapon : MonoBehaviour
     [SerializeField] private float attackCooldown;
     private PlayerMovement playerMovement;
     private float cooldownTimer = Mathf.Infinity;
+    private float lastValidAngle; // Store the last valid angle
+    private bool isAiming = false; // Track if aiming
 
     [SerializeField] private Transform FirePoint;
     [SerializeField] private GameObject[] bullets;
@@ -68,16 +70,44 @@ public class PlayerAimWeapon : MonoBehaviour
 
     private void Update()
     {
-        HandleAiming();
-        HandleShooting();
-        ammoText.SetText(ammo + "/" + bulletsInReserve);
+        if (!playerMovement.IsMoving())
+        {
+            // Enable/disable aiming when pressing the right mouse button
+            if (Input.GetMouseButton(1)) // Right Mouse Button
+            {
+                isAiming = true;
+                playerMovement.DisableMovement(); // Prevent movement while aiming
+            }
+            else
+            {
+                isAiming = false;
+                playerMovement.EnableMovement(); // Re-enable movement
+            }
 
+            if (isAiming && !playerMovement.IsMoving())
+            {
+                if (!aimTransform.gameObject.activeSelf)
+                {
+                    aimTransform.gameObject.SetActive(true); // Ensure the aiming object is active before using it
+                }
+                HandleAiming();
+                HandleShooting();
+            }
+            else
+            {
+                aimTransform.gameObject.SetActive(false); // Hide gun when not aiming
+            }
+
+            ammoText.SetText(ammo + "/" + bulletsInReserve);
+
+        }
         // Check for reload input
         if (Input.GetKeyDown(KeyCode.R))
         {
             Reload();
         }
     }
+
 
     public void IncreaseAmmo(int increaseAmount)
     {
@@ -103,48 +133,81 @@ public class PlayerAimWeapon : MonoBehaviour
         return worldPosition;
     }
 
-    private void HandleAiming()
+   private void HandleAiming()
+{
+    if (!isAiming) return; // Don't aim if RMB is not held
+    aimTransform.gameObject.SetActive(true); // Show gun only when aiming
+
+    Vector3 mousePosition = GetMouseWorldPosition();
+    Vector3 aimDirection = (mousePosition - transform.position).normalized;
+
+    float targetAngle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
+
+    // Normalize angles within -180° to 180° range
+    if (targetAngle > 180f) targetAngle -= 360f;
+    if (targetAngle < -180f) targetAngle += 360f;
+
+    float clampedAngle;
+
+    if (playerMovement.IsFacingRight)
     {
-        if (aimTransform == null) return;
-
-        Vector3 mousePosition = GetMouseWorldPosition();
-        Vector3 aimDirection = (mousePosition - transform.position).normalized;
-
-        float targetAngle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
-
-        if (playerMovement.IsFacingRight)
-        {
-            targetAngle = Mathf.Clamp(targetAngle, -63.64f, 39.26f);
-            aimTransform.localScale = Vector3.Lerp(aimTransform.localScale, new Vector3(1, 1, 1), Time.deltaTime * smoothFlipSpeed);
-        }
-        else
-        {
-            targetAngle = Mathf.Clamp(targetAngle, 190.03f, -190.63f);
-            aimTransform.localScale = Vector3.Lerp(aimTransform.localScale, new Vector3(-1, -1, -1), Time.deltaTime * smoothFlipSpeed);
-        }
-
-        aimTransform.eulerAngles = new Vector3(0, 0, targetAngle);
-        aimTransform.position = transform.position + aimDirection * armLength;
+        clampedAngle = Mathf.Clamp(targetAngle, -15f, 30f);
+        aimTransform.localScale = new Vector3(1, 1, 1); // Normal gun scale
     }
+    else
+    {
+        clampedAngle = Mathf.Clamp(targetAngle, 150f, 210f);
+        aimTransform.localScale = new Vector3(-1, -1, 1); // Flip gun
+    }
+
+    if (targetAngle == clampedAngle)
+    {
+        lastValidAngle = targetAngle;
+    }
+
+    aimTransform.eulerAngles = new Vector3(0, 0, lastValidAngle);
+    aimTransform.position = transform.position + (Quaternion.Euler(0, 0, lastValidAngle) * Vector3.right * armLength);
+}
+
 
     private void HandleShooting()
     {
         cooldownTimer += Time.deltaTime;
 
+        // Prevent shooting while moving
         if (Input.GetMouseButtonDown(0) && cooldownTimer >= attackCooldown && playerMovement.canShoot())
         {
             if (ammo > 0)
             {
                 Vector3 mousePosition = GetMouseWorldPosition();
-                Attack();
+                Vector3 aimDirection = (mousePosition - transform.position).normalized;
+                float targetAngle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
 
-                aimAnimator.SetTrigger("Shoot");
-
-                OnShoot?.Invoke(this, new OnShootEventArgs
+                // Ensure shooting only within aiming bounds
+                bool isWithinAimingBounds = false;
+                if (playerMovement.IsFacingRight)
                 {
-                    gunEndPointPosition = aimGunEndPointTransform.position,
-                    shootPosition = mousePosition,
-                });
+                    isWithinAimingBounds = targetAngle >= -15f && targetAngle <= 30f;
+                }
+                else
+                {
+                    isWithinAimingBounds = targetAngle >= 150f && targetAngle <= 210f;
+                }
+
+                if (isWithinAimingBounds)
+                {
+                    Attack();
+                    aimAnimator.SetTrigger("Shoot");
+                    OnShoot?.Invoke(this, new OnShootEventArgs
+                    {
+                        gunEndPointPosition = aimGunEndPointTransform.position,
+                        shootPosition = mousePosition,
+                    });
+                }
+                else
+                {
+                    Debug.Log("Cannot shoot outside aiming bounds!");
+                }
             }
             else
             {
@@ -152,6 +215,8 @@ public class PlayerAimWeapon : MonoBehaviour
             }
         }
     }
+
+
 
     private void Reload()
     {
