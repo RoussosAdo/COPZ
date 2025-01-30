@@ -37,6 +37,9 @@ public class PlayerAimWeapon : MonoBehaviour
     [SerializeField] private float armLength = 0.8f; // Adjustable distance from the body
     [SerializeField] private float smoothFlipSpeed = 10f; // Smooth flipping speed
 
+    private float aimStartDelay = 1f; // Delay before aiming starts
+    private float aimTimer = 0f;
+
     private void Awake()
     {
         playerMovement = GetComponent<PlayerMovement>();
@@ -133,81 +136,80 @@ public class PlayerAimWeapon : MonoBehaviour
         return worldPosition;
     }
 
-   private void HandleAiming()
-{
-    if (!isAiming) return; // Don't aim if RMB is not held
-    aimTransform.gameObject.SetActive(true); // Show gun only when aiming
+    
 
-    Vector3 mousePosition = GetMouseWorldPosition();
-    Vector3 aimDirection = (mousePosition - transform.position).normalized;
-
-    float targetAngle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
-
-    // Normalize angles within -180° to 180° range
-    if (targetAngle > 180f) targetAngle -= 360f;
-    if (targetAngle < -180f) targetAngle += 360f;
-
-    float clampedAngle;
-
-    if (playerMovement.IsFacingRight)
+    private void HandleAiming()
     {
-        clampedAngle = Mathf.Clamp(targetAngle, -15f, 30f);
-        aimTransform.localScale = new Vector3(1, 1, 1); // Normal gun scale
-    }
-    else
-    {
-        clampedAngle = Mathf.Clamp(targetAngle, 150f, 210f);
-        aimTransform.localScale = new Vector3(-1, -1, 1); // Flip gun
-    }
+        if (!isAiming)
+        {
+            aimTimer = 0f; // Reset timer when not aiming
+            return;
+        }
 
-    if (targetAngle == clampedAngle)
-    {
-        lastValidAngle = targetAngle;
-    }
+        aimTimer += Time.deltaTime;
+        if (aimTimer < aimStartDelay) return; // Wait before allowing aiming
 
-    aimTransform.eulerAngles = new Vector3(0, 0, lastValidAngle);
-    aimTransform.position = transform.position + (Quaternion.Euler(0, 0, lastValidAngle) * Vector3.right * armLength);
-}
+        aimTransform.gameObject.SetActive(true); // Show gun only when aiming
+
+        Vector3 mousePosition = GetMouseWorldPosition();
+        Vector3 aimDirection = (mousePosition - transform.position).normalized;
+
+        float targetAngle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
+
+        // Normalize angles within -180° to 180° range
+        if (targetAngle > 180f) targetAngle -= 360f;
+        if (targetAngle < -180f) targetAngle += 360f;
+
+        // Prevent aiming in the opposite direction of movement
+        bool isAimingOpposite = (playerMovement.IsFacingRight && targetAngle < -0f) ||
+                                 (!playerMovement.IsFacingRight && targetAngle > 180f);
+
+        if (isAimingOpposite)
+        {
+            return; // Do not update aiming if trying to aim in the opposite direction
+        }
+
+        float clampedAngle;
+
+        if (playerMovement.IsFacingRight)
+        {
+            clampedAngle = Mathf.Clamp(targetAngle, 0f, 30f);
+            aimTransform.localScale = new Vector3(1, 1, 1); // Normal gun scale
+        }
+        else
+        {
+            clampedAngle = Mathf.Clamp(targetAngle, 150f, 280f);
+            aimTransform.localScale = new Vector3(-1, -1, 1); // Flip gun
+        }
+
+        if (targetAngle == clampedAngle)
+        {
+            lastValidAngle = targetAngle;
+        }
+
+        aimTransform.eulerAngles = new Vector3(0, 0, lastValidAngle);
+        aimTransform.position = transform.position + (Quaternion.Euler(0, 0, lastValidAngle) * Vector3.right * armLength);
+    }
 
 
     private void HandleShooting()
     {
         cooldownTimer += Time.deltaTime;
 
-        // Prevent shooting while moving
         if (Input.GetMouseButtonDown(0) && cooldownTimer >= attackCooldown && playerMovement.canShoot())
         {
             if (ammo > 0)
             {
-                Vector3 mousePosition = GetMouseWorldPosition();
-                Vector3 aimDirection = (mousePosition - transform.position).normalized;
-                float targetAngle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
+                // Get the direction the FirePoint is facing
+                Vector3 shootDirection = FirePoint.right * (playerMovement.IsFacingRight ? 1 : -1);
 
-                // Ensure shooting only within aiming bounds
-                bool isWithinAimingBounds = false;
-                if (playerMovement.IsFacingRight)
+                Attack(shootDirection);
+                aimAnimator.SetTrigger("Shoot");
+                OnShoot?.Invoke(this, new OnShootEventArgs
                 {
-                    isWithinAimingBounds = targetAngle >= -15f && targetAngle <= 30f;
-                }
-                else
-                {
-                    isWithinAimingBounds = targetAngle >= 150f && targetAngle <= 210f;
-                }
-
-                if (isWithinAimingBounds)
-                {
-                    Attack();
-                    aimAnimator.SetTrigger("Shoot");
-                    OnShoot?.Invoke(this, new OnShootEventArgs
-                    {
-                        gunEndPointPosition = aimGunEndPointTransform.position,
-                        shootPosition = mousePosition,
-                    });
-                }
-                else
-                {
-                    Debug.Log("Cannot shoot outside aiming bounds!");
-                }
+                    gunEndPointPosition = aimGunEndPointTransform.position,
+                    shootPosition = aimGunEndPointTransform.position + shootDirection * 10f * (playerMovement.IsFacingRight ? 1 : -1), // Adjusted for left-facing
+                });
             }
             else
             {
@@ -249,7 +251,7 @@ public class PlayerAimWeapon : MonoBehaviour
         reloadText.SetText("");
     }
 
-    private void Attack()
+    private void Attack(Vector3 direction)
     {
         cooldownTimer = 0;
 
@@ -258,7 +260,7 @@ public class PlayerAimWeapon : MonoBehaviour
         {
             bullet.transform.position = FirePoint.position;
             bullet.SetActive(true);
-            bullet.GetComponent<Projectile>().SetDirection((GetMouseWorldPosition() - FirePoint.position).normalized);
+            bullet.GetComponent<Projectile>().SetDirection(direction.normalized * (playerMovement.IsFacingRight ? 1 : -1)); // Adjusted for left-facing
 
             ammo--;
             Camera.main.GetComponent<CameraShake>().Shake();
@@ -267,5 +269,7 @@ public class PlayerAimWeapon : MonoBehaviour
         {
             Debug.Log("No available bullets in pool!");
         }
+
     }
+
 }
