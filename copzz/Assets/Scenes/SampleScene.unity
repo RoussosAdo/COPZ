@@ -458,6 +458,7 @@ MonoBehaviour:
   reloadText: {fileID: 139223862}
   armLength: 0.7
   smoothFlipSpeed: 10
+  aimDelay: 0.5
 --- !u!61 &215968277
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -1150,7 +1151,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 5
   m_Sprite: {fileID: 947679596, guid: a6638383125cb9f43a6bc29cd7e9d6e2, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0

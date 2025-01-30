@@ -37,8 +37,10 @@ public class PlayerAimWeapon : MonoBehaviour
     [SerializeField] private float armLength = 0.8f; // Adjustable distance from the body
     [SerializeField] private float smoothFlipSpeed = 10f; // Smooth flipping speed
 
-    private float aimStartDelay = 1f; // Delay before aiming starts
-    private float aimTimer = 0f;
+    private bool hasStartedAiming = false;
+    private float aimStartTime = 0f;
+    [SerializeField] private float aimDelay = 0.5f; // Delay before aiming starts
+
 
     private void Awake()
     {
@@ -136,18 +138,25 @@ public class PlayerAimWeapon : MonoBehaviour
         return worldPosition;
     }
 
-    
+
 
     private void HandleAiming()
     {
         if (!isAiming)
         {
-            aimTimer = 0f; // Reset timer when not aiming
+            hasStartedAiming = false;
+            aimStartTime = Time.time; // Reset the timer when not aiming
             return;
         }
 
-        aimTimer += Time.deltaTime;
-        if (aimTimer < aimStartDelay) return; // Wait before allowing aiming
+        if (!hasStartedAiming)
+        {
+            if (Time.time - aimStartTime < aimDelay)
+            {
+                return; // Wait for the delay before allowing aiming
+            }
+            hasStartedAiming = true;
+        }
 
         aimTransform.gameObject.SetActive(true); // Show gun only when aiming
 
@@ -160,20 +169,20 @@ public class PlayerAimWeapon : MonoBehaviour
         if (targetAngle > 180f) targetAngle -= 360f;
         if (targetAngle < -180f) targetAngle += 360f;
 
-        // Prevent aiming in the opposite direction of movement
-        bool isAimingOpposite = (playerMovement.IsFacingRight && targetAngle < -0f) ||
-                                 (!playerMovement.IsFacingRight && targetAngle > 180f);
+        // Prevent aiming in the opposite direction of movement at the start
+        bool isAimingOpposite = (playerMovement.IsFacingRight && targetAngle < -30f) ||
+                                 (!playerMovement.IsFacingRight && targetAngle > 210f);
 
-        if (isAimingOpposite)
+        if (!hasStartedAiming && isAimingOpposite)
         {
-            return; // Do not update aiming if trying to aim in the opposite direction
+            return; // Do not update aiming if trying to aim in the opposite direction initially
         }
 
         float clampedAngle;
 
         if (playerMovement.IsFacingRight)
         {
-            clampedAngle = Mathf.Clamp(targetAngle, 0f, 30f);
+            clampedAngle = Mathf.Clamp(targetAngle, -0f, 30f);
             aimTransform.localScale = new Vector3(1, 1, 1); // Normal gun scale
         }
         else
@@ -190,6 +199,7 @@ public class PlayerAimWeapon : MonoBehaviour
         aimTransform.eulerAngles = new Vector3(0, 0, lastValidAngle);
         aimTransform.position = transform.position + (Quaternion.Euler(0, 0, lastValidAngle) * Vector3.right * armLength);
     }
+
 
 
     private void HandleShooting()
