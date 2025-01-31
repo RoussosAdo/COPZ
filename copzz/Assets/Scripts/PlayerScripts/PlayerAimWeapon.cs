@@ -12,6 +12,9 @@ public class PlayerAimWeapon : MonoBehaviour
     }
 
     private BulletPoolManager bulletPoolManager;
+    private bool isReloading = false; // Track if the player is reloading
+
+
 
     [SerializeField] private float attackCooldown;
     private PlayerMovement playerMovement;
@@ -169,32 +172,64 @@ public class PlayerAimWeapon : MonoBehaviour
         if (targetAngle > 180f) targetAngle -= 360f;
         if (targetAngle < -180f) targetAngle += 360f;
 
-        // Prevent aiming in the opposite direction of movement at the start
-        bool isAimingOpposite = (playerMovement.IsFacingRight && targetAngle < -30f) ||
-                                 (!playerMovement.IsFacingRight && targetAngle > 210f);
+        Debug.Log("Normalized Target Angle: " + targetAngle);
 
-        if (!hasStartedAiming && isAimingOpposite)
+        // Reset angle when changing directions
+        if (playerMovement.IsFacingRight && lastValidAngle < 0)
         {
-            return; // Do not update aiming if trying to aim in the opposite direction initially
+            lastValidAngle = 0; // Reset to right-facing angle
+        }
+        else if (!playerMovement.IsFacingRight && lastValidAngle >= 0)
+        {
+            lastValidAngle = 180; // Reset to left-facing angle
         }
 
         float clampedAngle;
+        bool isValidAngle = true;
 
         if (playerMovement.IsFacingRight)
         {
-            clampedAngle = Mathf.Clamp(targetAngle, -0f, 30f);
+            // Limit aiming upwards to avoid weird flips
+            clampedAngle = Mathf.Clamp(targetAngle, -60f, 60f);
             aimTransform.localScale = new Vector3(1, 1, 1); // Normal gun scale
+
+            if (targetAngle < -60f || targetAngle > 120f)
+            {
+                isValidAngle = false; // Out of range
+            }
         }
         else
         {
-            clampedAngle = Mathf.Clamp(targetAngle, 150f, 280f);
+            // Limit aiming downwards when facing left to avoid sudden flips
+            if (targetAngle < -60f)
+            {
+                clampedAngle = Mathf.Clamp(targetAngle, -180f, -120f);
+            }
+            else
+            {
+                clampedAngle = Mathf.Clamp(targetAngle, 120f, 180f);
+            }
+
             aimTransform.localScale = new Vector3(-1, -1, 1); // Flip gun
+
+            if (targetAngle > -60f && targetAngle < 120f)
+            {
+                isValidAngle = false; // Out of range
+            }
         }
 
-        if (targetAngle == clampedAngle)
+        // ?? Only update lastValidAngle if within valid range
+        if (isValidAngle)
         {
-            lastValidAngle = targetAngle;
+            lastValidAngle = clampedAngle;
         }
+        else
+        {
+            Debug.Log("Angle out of range, hiding gun.");
+        }
+
+        // Hide gun if aiming outside the allowed angles
+        aimTransform.gameObject.SetActive(isValidAngle);
 
         aimTransform.eulerAngles = new Vector3(0, 0, lastValidAngle);
         aimTransform.position = transform.position + (Quaternion.Euler(0, 0, lastValidAngle) * Vector3.right * armLength);
@@ -206,19 +241,23 @@ public class PlayerAimWeapon : MonoBehaviour
     {
         cooldownTimer += Time.deltaTime;
 
+        // ?? Prevent shooting if reloading OR gun is hidden
+        if (isReloading || !aimTransform.gameObject.activeSelf)
+        {
+            return;
+        }
+
         if (Input.GetMouseButtonDown(0) && cooldownTimer >= attackCooldown && playerMovement.canShoot())
         {
             if (ammo > 0)
             {
-                // Get the direction the FirePoint is facing
                 Vector3 shootDirection = FirePoint.right * (playerMovement.IsFacingRight ? 1 : -1);
-
                 Attack(shootDirection);
                 aimAnimator.SetTrigger("Shoot");
                 OnShoot?.Invoke(this, new OnShootEventArgs
                 {
                     gunEndPointPosition = aimGunEndPointTransform.position,
-                    shootPosition = aimGunEndPointTransform.position + shootDirection * 10f * (playerMovement.IsFacingRight ? 1 : -1), // Adjusted for left-facing
+                    shootPosition = aimGunEndPointTransform.position + shootDirection * 10f * (playerMovement.IsFacingRight ? 1 : -1),
                 });
             }
             else
@@ -230,11 +269,13 @@ public class PlayerAimWeapon : MonoBehaviour
 
 
 
+
+
     private void Reload()
     {
-        if (ammo == magazineSize)
+        if (ammo == magazineSize || isReloading)
         {
-            Debug.Log("Magazine already full!");
+            Debug.Log("Already full or currently reloading!");
             return;
         }
 
@@ -243,12 +284,11 @@ public class PlayerAimWeapon : MonoBehaviour
 
         if (bulletsToReload > 0)
         {
-            ammo += bulletsToReload;
-            bulletsInReserve -= bulletsToReload;
-
-            Debug.Log($"Reloaded {bulletsToReload} bullets. Current Ammo: {ammo}/{bulletsInReserve}");
+            isReloading = true; // ?? Prevent shooting while reloading
             reloadText.SetText("Reloading...");
-            Invoke("ClearReloadText", 1.5f); // Simulate reload delay
+            Debug.Log("Reloading...");
+
+            Invoke(nameof(FinishReload), 1.5f); // Simulate reload delay
         }
         else
         {
@@ -256,10 +296,25 @@ public class PlayerAimWeapon : MonoBehaviour
         }
     }
 
-    private void ClearReloadText()
+    // ?? Called after reload delay to restore ammo and allow shooting again
+    private void FinishReload()
     {
-        reloadText.SetText("");
+        int bulletsNeeded = magazineSize - ammo;
+        int bulletsToReload = Mathf.Min(bulletsNeeded, bulletsInReserve);
+
+        if (bulletsToReload > 0)
+        {
+            ammo += bulletsToReload;
+            bulletsInReserve -= bulletsToReload;
+            Debug.Log($"Reloaded {bulletsToReload} bullets. Current Ammo: {ammo}/{bulletsInReserve}");
+        }
+
+        isReloading = false; // ? Allow shooting again
+        reloadText.SetText(""); // Clear reload text
     }
+
+
+    
 
     private void Attack(Vector3 direction)
     {

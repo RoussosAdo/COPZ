@@ -456,7 +456,7 @@ MonoBehaviour:
   magazineSize: 7
   ammoText: {fileID: 1583075424}
   reloadText: {fileID: 139223862}
-  armLength: 0.7
+  armLength: 1
   smoothFlipSpeed: 10
   aimDelay: 0.5
 --- !u!61 &215968277
